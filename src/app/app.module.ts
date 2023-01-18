@@ -11,11 +11,19 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import {MatTableModule} from '@angular/material/table';
 import {MatSelectModule} from '@angular/material/select';
 import {MatButtonModule} from '@angular/material/button';
+import {MatToolbarModule} from '@angular/material/toolbar';
+import {MatIconModule} from '@angular/material/icon';
+import { MatchesComponent } from './matches/matches.component'
+import { SolWalletsModule } from 'angular-sol-wallets';
+import { HistoryComponent } from './history/history.component';
+import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    MatchesComponent,
+    HistoryComponent
   ],
   imports: [
     BrowserModule,
@@ -29,7 +37,10 @@ import {MatButtonModule} from '@angular/material/button';
     MatTableModule,
     MatSelectModule,
     MatButtonModule,
-
+    MatToolbarModule,
+    MatIconModule,
+    SolWalletsModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
