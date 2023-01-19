@@ -5,11 +5,17 @@
     </ng-container>
     <ng-container matColumnDef="homeTeam">
         <th mat-header-cell *matHeaderCellDef> Home team </th>
-        <td mat-cell *matCellDef="let element"> {{element.homeTeam}} </td>
+        <td mat-cell *matCellDef="let element"> 
+            {{element.homeTeam}} 
+            <img src="{{element.homeCrest}}" alt="image" width="30">
+        </td>
     </ng-container>
     <ng-container matColumnDef="awayTeam">
         <th mat-header-cell *matHeaderCellDef> Away team </th>
-        <td mat-cell *matCellDef="let element"> {{element.awayTeam}} </td>
+        <td mat-cell *matCellDef="let element"> 
+            {{element.awayTeam}} 
+            <img src="{{element.awayCrest}}" alt="image" width="30">
+        </td>
     </ng-container>
     <ng-container matColumnDef="options">
         <th mat-header-cell *matHeaderCellDef> Options </th>
@@ -36,9 +42,14 @@
     <ng-container matColumnDef="actions">
         <th mat-header-cell  *matHeaderCellDef> Actions </th>
         <td mat-cell *matCellDef="let element">
-             <button mat-stroked-button (click)="placeBet(element)">Bet</button>
+             <button mat-stroked-button (click)="placeBet(element)" *ngIf="!element.blocked">Bet</button>
+             <div *ngIf="element.blocked"> Already made a bet for {{element.bet}} </div>
         </td>
     </ng-container> 
     <tr mat-header-row *matHeaderRowDef="this.columnsToDisplay"></tr>
     <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
 </table>
+<div *ngIf="matches.length==0">
+    <p>Loading...</p>
+    If nothing shows up after a few seconds please click <a href="https://cors-anywhere.herokuapp.com/corsdemo">here</a> and refresh this page after following instructions.
+</div>

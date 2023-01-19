@@ -12,6 +12,9 @@ interface TableElement{
   awayTeam: string;
   bet: string;
   amount: number;
+  homeCrest: string;
+  awayCrest: string;
+  blocked: boolean;
 }
 
 @Component({
@@ -40,7 +43,7 @@ export class MatchesComponent implements OnInit {
         this.matchesToDisplay = this.matches.slice(0, 10)
         this.matchesToDisplay.forEach(
           match => {
-            this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:"", amount: 0})
+            this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:"", amount: 0, blocked: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest})
           }
         )
         console.log(this.table);
@@ -53,17 +56,18 @@ export class MatchesComponent implements OnInit {
     element.bet = value;
   }
 
-  placeBet(element: any) {
-    console.log(element);
-    this.solWalletS.connect().then( wallet => {
-      console.log("Wallet connected successfully with this address:", wallet.publicKey?.[Symbol.toStringTag]);
-    }).catch(err => {
-      console.log("Error connecting wallet", err );
-    })
-  }
-
-  onSubmit(){
-
+  placeBet(element: TableElement) {
+    if(element.bet != '' && element.amount > 0)
+      {
+        console.log(element);
+      this.solWalletS.connect().then( wallet => {
+        console.log("Wallet connected successfully with this address:", wallet.publicKey?.[Symbol.toStringTag]);
+      }).catch(err => {
+        console.log("Error connecting wallet", err );
+      })
+      //after connecting to backend it should be set for already bet elements
+      element.blocked = true;
+    }
   }
 
 }

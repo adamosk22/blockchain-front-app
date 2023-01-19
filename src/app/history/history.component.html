@@ -1,1 +1,46 @@
-<p>history works!</p>
+<table mat-table [dataSource]="this.table" *ngIf="this.available">
+    <ng-container matColumnDef="date">
+        <th mat-header-cell *matHeaderCellDef> Date </th>
+        <td mat-cell *matCellDef="let element"> {{element.utcDate}} </td>
+    </ng-container>
+    <ng-container matColumnDef="homeTeam">
+        <th mat-header-cell *matHeaderCellDef> Home team </th>
+        <td mat-cell *matCellDef="let element"> 
+            {{element.homeTeam}} 
+            <img src="{{element.homeCrest}}" alt="image" width="30">
+        </td>
+    </ng-container>
+    <ng-container matColumnDef="awayTeam">
+        <th mat-header-cell *matHeaderCellDef> Away team </th>
+        <td mat-cell *matCellDef="let element"> 
+            {{element.awayTeam}} 
+            <img src="{{element.awayCrest}}" alt="image" width="30">
+        </td>
+    </ng-container>
+    <ng-container matColumnDef="bet">
+        <th mat-header-cell *matHeaderCellDef> Bet </th>
+        <td mat-cell *matCellDef="let element"> {{element.bet}} </td>
+    </ng-container>
+    <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef> Amount (SOL) </th>
+        <td mat-cell *matCellDef="let element"> {{element.amount}} </td>
+    </ng-container>
+    <ng-container matColumnDef="result">
+        <th mat-header-cell *matHeaderCellDef> Result </th>
+        <td mat-cell *matCellDef="let element"> {{element.result}} </td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+        <th mat-header-cell  *matHeaderCellDef> Actions </th>
+        <td mat-cell *matCellDef="let element">
+             <button mat-stroked-button (click)="collect(element)" *ngIf="element.bet == element.result && !element.collected">Collect</button>
+             <div *ngIf="element.bet != element.result">No reward</div>
+             <div *ngIf="element.bet == element.result && element.collected">Collected!</div>
+        </td>
+    </ng-container> 
+    <tr mat-header-row *matHeaderRowDef="this.columnsToDisplay"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+</table>
+<div *ngIf="matches.length==0">
+    <p>Loading...</p>
+    If nothing shows up after a few seconds please click <a href="https://cors-anywhere.herokuapp.com/corsdemo">here</a> and refresh this page after following instructions.
+</div>
