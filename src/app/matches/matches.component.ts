@@ -3,7 +3,9 @@ import { Observable } from 'rxjs';
 import { Match, Result } from '../app.interfaces';
 import { AppService } from '../app.service';
 import { SolWalletsService, Wallet } from "angular-sol-wallets" ;
-import { HttpClient } from '@angular/common/http';
+import * as anchor from "@project-serum/serum";
+import { Program } from "@project-serum/anchor";
+import { BettingApp } from '../betting_app';
 
 interface TableElement{
   id: number;
@@ -48,6 +50,13 @@ export class MatchesComponent implements OnInit {
         )
         console.log(this.table);
         this.available = true;
+        // Configure the client to use the local cluster.
+        anchor.setProvider(anchor.AnchorProvider.env());
+
+        const program = anchor.workspace.BettingApp as Program<BettingApp>;
+        const owner = (program.provider as anchor.AnchorProvider).wallet;
+        const contract = anchor.web3.Keypair.generate();
+        const user = anchor.web3.Keypair.generate();
       }
     )
   }
