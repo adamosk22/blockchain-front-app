@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { Match, Result } from '../app.interfaces';
 import { AppService } from '../app.service';
 import { SolWalletsService, Wallet } from "angular-sol-wallets" ;
-import * as anchor from "@project-serum/serum";
+import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { BettingApp } from '../betting_app';
 
