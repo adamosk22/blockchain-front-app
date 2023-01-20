@@ -4,8 +4,10 @@ import { Match, Result } from '../app.interfaces';
 import { AppService } from '../app.service';
 import { SolWalletsService, Wallet } from "angular-sol-wallets" ;
 import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
-import { BettingApp } from '../betting_app';
+import { Program, AnchorProvider } from "@project-serum/anchor";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { BettingApp, IDL } from '../betting_app';
 
 interface TableElement{
   id: number;
@@ -34,6 +36,7 @@ export class MatchesComponent implements OnInit {
   available: boolean = false;
   bets: string[] = ['HOME_TEAM', 'AWAY_TEAM', 'DRAW']
   myDates: number[] = []
+  wallet = this.solWalletS.connect();
   
 
   ngOnInit(){
@@ -51,12 +54,12 @@ export class MatchesComponent implements OnInit {
         console.log(this.table);
         this.available = true;
         // Configure the client to use the local cluster.
-        anchor.setProvider(anchor.AnchorProvider.env());
+        //anchor.setProvider(anchor.AnchorProvider.env());
 
-        const program = anchor.workspace.BettingApp as Program<BettingApp>;
-        const owner = (program.provider as anchor.AnchorProvider).wallet;
-        const contract = anchor.web3.Keypair.generate();
-        const user = anchor.web3.Keypair.generate();
+        //const program = anchor.workspace.BettingApp as Program<BettingApp>;
+        //const owner = (program.provider as _anchor.AnchorProvider).wallet;
+        //const contract = _anchor.web3.Keypair.generate();
+        //const user = _anchor.web3.Keypair.generate();
       }
     )
   }
@@ -68,15 +71,95 @@ export class MatchesComponent implements OnInit {
   placeBet(element: TableElement) {
     if(element.bet != '' && element.amount > 0)
       {
+    this.solWalletS.connect().then( wallet => {
+    const program = this.getProgram(wallet)
+    const amount = new anchor.BN(1 * anchor.web3.LAMPORTS_PER_SOL);
+    if(program){
+      const contract = anchor.web3.Keypair.generate();
+      var user;
+    
         console.log(element);
-      this.solWalletS.connect().then( wallet => {
+      
         console.log("Wallet connected successfully with this address:", wallet.publicKey?.[Symbol.toStringTag]);
-      }).catch(err => {
-        console.log("Error connecting wallet", err );
-      })
+        user = wallet.publicKey;
+      
       //after connecting to backend it should be set for already bet elements
       element.blocked = true;
-    }
+      this.placeWager(program, contract, user, element.id, amount, element.bet)
+
+      
+    
   }
+  }).catch(err => {
+    console.log("Error connecting wallet", err );
+  })
+}
+}
+
+  getProvider(wallet: Wallet) {
+    if (!this.wallet) {
+      return null;
+    }
+
+    const network = "http://localhost:8899";
+    const connection = new Connection(network, "processed");
+
+    const provider = new AnchorProvider(connection, wallet, {
+      preflightCommitment: "processed",
+    });
+
+    return provider;
+  }
+
+  getProgram(wallet: Wallet) {
+    const provider = this.getProvider(wallet);
+
+    if (!provider) {
+      return;
+    }
+
+    const program: Program<BettingApp> = new Program(
+      IDL,
+      "4BXdw9SoHpzaZCMR5tvEhjm7qQiCsjUAfmjJTHmTmEVC",
+      provider
+    );
+
+    return program;
+  }
+
+    async placeWager(
+    program: Program<BettingApp>,
+    contract: any,
+    user: any,
+    gameId: any,
+    amount: any,
+    prediction: any,
+  ) {
+    const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("user-stats"),
+      ],
+      program.programId
+    );
+    const [programPDA, _pb] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("program-wallet"),
+        contract.publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+  
+    await program.methods
+      .placeWager(gameId, amount, prediction)
+      .accounts({
+        user: user,
+        contract: contract.publicKey,
+        programWallet: programPDA,
+        userStats: userStatsPDA,
+      })
+      .signers([contract])
+      .rpc();
+  }
+
 
 }
