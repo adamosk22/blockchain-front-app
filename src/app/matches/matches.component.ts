@@ -36,7 +36,7 @@ export class MatchesComponent implements OnInit {
   table: TableElement[] = [];
   columnsToDisplay = ['date', 'homeTeam', 'awayTeam', 'options', 'amount', 'actions'];
   available: boolean = false;
-  bets: string[] = ['HomeVictory', 'AwayVictory', 'Draw']
+  bets: string[] = ['HomeVictory', 'AwayVictory', 'Tie']
   myDates: number[] = []
   network = "https://api.devnet.solana.com";
   connection = new Connection(this.network, "processed");
