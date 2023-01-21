@@ -7,6 +7,8 @@ import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider } from "@project-serum/anchor";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
+import * as buffer from 'buffer';
+window.Buffer = buffer.Buffer;
 
 interface TableElement{
   id: number;
@@ -37,17 +39,19 @@ export class MatchesComponent implements OnInit {
   myDates: number[] = []
   network = "https://api.devnet.solana.com";
   connection = new Connection(this.network, "processed");
-  address = "Fnegbc6LmnZGufbRXbgpEZbVDQJe2aSUYhsbjjU611Hh"
+  address = new PublicKey("Fnegbc6LmnZGufbRXbgpEZbVDQJe2aSUYhsbjjU611Hh")
   
 
   ngOnInit(){
     this.solWalletS.connect().then( async wallet => {
-      /*const program = this.getProgram(wallet)
-      const contract = anchor.web3.Keypair.generate();
+      const program = this.getProgram(wallet)
       if(program){
     const state = await program.account.programContract.fetch(this.address);
-    console.log(state)*/
-    const result: Observable<Result> = this.service.getMatches();
+    console.log(state)
+    const ids = state.activeGames.map(x => x.id).join(',')
+    const result: Observable<Result> = this.service.getHistory(ids);
+    
+
     result.subscribe(
       val => {
         console.log(val);
@@ -60,17 +64,10 @@ export class MatchesComponent implements OnInit {
         )
         console.log(this.table);
         this.available = true;
-        // Configure the client to use the local cluster.
-        //anchor.setProvider(anchor.AnchorProvider.env());
-
-        //const program = anchor.workspace.BettingApp as Program<BettingApp>;
-        //const owner = (program.provider as _anchor.AnchorProvider).wallet;
-        //const contract = _anchor.web3.Keypair.generate();
-        //const user = _anchor.web3.Keypair.generate();
       }
     )
     }
-  //}
+  }
     )
     
   }
@@ -131,7 +128,7 @@ export class MatchesComponent implements OnInit {
 
     const program: Program<BettingApp> = new Program(
       IDL,
-      this.address,
+      "Cs6SipyJ7i4Qgw1QaaR2Jmtrbx9c4A7sHa4Kgx9edLHC",
       provider
     );
 
@@ -160,12 +157,21 @@ export class MatchesComponent implements OnInit {
       ],
       program.programId
     );
+    //this.createUserStats(program, user, wallet)
+    const info = program.provider.connection.getAccountInfo(user)
+    console.log(info)
+    info.then(val => {
+      console.log(val)
+    })
+    console.log("contract:" + program.provider.connection.getAccountInfo(this.address))
+    console.log(programPDA)
+    console.log(userStatsPDA)
 
-   
+   console.log(user)
       const tx = program.methods.placeWager(gameId, amount, prediction)
       .accounts({
         user: user,
-        contract: contract.publicKey,
+        contract: this.address,
         programWallet: programPDA,
         userStats: userStatsPDA,
       })
@@ -190,6 +196,29 @@ export class MatchesComponent implements OnInit {
           const txId = await this.connection.sendRawTransaction(signedTx.serialize())
           await this.connection.confirmTransaction(txId)
     }
+  }
+
+  async createUserStats(
+    program: Program<BettingApp>, 
+    user: any,
+    wallet: Wallet
+  ) {
+    const [userStatsPDA, _] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("user-stats"),
+        user.toBuffer(),
+      ],
+      program.programId
+    );
+  
+    const tx = await program.methods
+      .createUserStats()
+      .accounts({
+        user: user,
+        userStats: userStatsPDA,
+      })
+      .transaction()
+      this.makeTransaction(tx, wallet)
   }
 
   
