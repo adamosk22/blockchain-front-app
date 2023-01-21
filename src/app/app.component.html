@@ -7,6 +7,7 @@
     <div>
       <a mat-button [routerLink]="'/matches'"> Matches </a>
       <a mat-button [routerLink]="'/history'"> History </a>
+      <a mat-button [routerLink]="'/owner'" *ngIf="publicKey=='PublicKey(qRJ4PA426M2hUmCxGLXa7eiG1Przht2ucJE29WP6dSC)'"> Owner </a>
 
     </div>
   </mat-toolbar-row>

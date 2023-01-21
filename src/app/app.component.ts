@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SolWalletsService } from 'angular-sol-wallets';
 import { Observable } from 'rxjs';
 import { AppService } from './app.service';
 
@@ -12,4 +13,13 @@ import { AppService } from './app.service';
 })
 export class AppComponent {
   title = 'blockchain-front-app';
+  publicKey: string = ''
+
+  constructor(private solWalletS: SolWalletsService) {}
+
+  ngOnInit(){
+    this.solWalletS.connect().then( wallet => {
+    this.publicKey = wallet.publicKey?.[Symbol.toStringTag]
+    })
+  }
 }
