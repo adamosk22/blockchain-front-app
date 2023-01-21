@@ -8,6 +8,7 @@ import { Program, AnchorProvider } from "@project-serum/anchor";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
 import * as buffer from 'buffer';
+import { WalletAdapter } from '../WalletAdapter';
 window.Buffer = buffer.Buffer;
 
 interface TableElement{
@@ -112,7 +113,7 @@ export class MatchesComponent implements OnInit {
 
     
 
-    const provider = new AnchorProvider(this.connection, wallet, {
+    const provider = new AnchorProvider(this.connection, new WalletAdapter(wallet), {
       preflightCommitment: "processed",
     });
 
@@ -135,7 +136,7 @@ export class MatchesComponent implements OnInit {
     return program;
   }
 
-    async placeWager(
+  async placeWager(
     program: Program<BettingApp>,
     contract: any,
     user: PublicKey,
@@ -147,27 +148,18 @@ export class MatchesComponent implements OnInit {
     const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
       [
         anchor.utils.bytes.utf8.encode("user-stats"),
+        user.toBuffer(),
       ],
       program.programId
     );
     const [programPDA, _pb] = PublicKey.findProgramAddressSync(
       [
         anchor.utils.bytes.utf8.encode("program-wallet"),
-        contract.publicKey.toBuffer(),
+        this.address.toBuffer(),
       ],
       program.programId
     );
-    //this.createUserStats(program, user, wallet)
-    const info = program.provider.connection.getAccountInfo(user)
-    console.log(info)
-    info.then(val => {
-      console.log(val)
-    })
-    console.log("contract:" + program.provider.connection.getAccountInfo(this.address))
-    console.log(programPDA)
-    console.log(userStatsPDA)
-
-   console.log(user)
+    // this.createUserStats(program, user, wallet)
       const tx = program.methods.placeWager(gameId, amount, prediction)
       .accounts({
         user: user,

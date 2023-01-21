@@ -7,6 +7,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider } from "@project-serum/anchor";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
+import { WalletAdapter } from '../WalletAdapter';
 
 interface TableElement{
   id: number;
@@ -101,7 +102,7 @@ export class HistoryComponent implements OnInit {
 
     
 
-    const provider = new AnchorProvider(this.connection, wallet, {
+    const provider = new AnchorProvider(this.connection, new WalletAdapter(wallet), {
       preflightCommitment: "processed",
     });
 

@@ -19,7 +19,7 @@ export class AppComponent {
 
   ngOnInit(){
     this.solWalletS.connect().then( wallet => {
-    this.publicKey = wallet.publicKey?.[Symbol.toStringTag]
+    this.publicKey = wallet.publicKey?.[Symbol.toStringTag] ?? ""
     })
   }
 }
