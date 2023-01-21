@@ -36,7 +36,7 @@ export class MatchesComponent implements OnInit {
   table: TableElement[] = [];
   columnsToDisplay = ['date', 'homeTeam', 'awayTeam', 'options', 'amount', 'actions'];
   available: boolean = false;
-  bets: string[] = ['HOME_TEAM', 'AWAY_TEAM', 'DRAW']
+  bets: string[] = ['HomeVictory', 'AwayVictory', 'Draw']
   myDates: number[] = []
   network = "https://api.devnet.solana.com";
   connection = new Connection(this.network, "processed");
@@ -145,7 +145,7 @@ export class MatchesComponent implements OnInit {
     prediction: string,
     wallet: Wallet
   ) {
-    const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
+    const [userStatsPDA, _] = PublicKey.findProgramAddressSync(
       [
         anchor.utils.bytes.utf8.encode("user-stats"),
         user.toBuffer(),
@@ -159,8 +159,8 @@ export class MatchesComponent implements OnInit {
       ],
       program.programId
     );
-    // this.createUserStats(program, user, wallet)
-      const tx = program.methods.placeWager(gameId, amount, prediction)
+    //this.createUserStats(program, user, wallet)
+      const tx = await program.methods.placeWager(gameId, amount, prediction)
       .accounts({
         user: user,
         contract: this.address,
@@ -168,16 +168,7 @@ export class MatchesComponent implements OnInit {
         userStats: userStatsPDA,
       })
       .transaction()
-      tx.then(value => {
-        this.makeTransaction(value, wallet)
-      })
-      
-
-
-      
-      
-
-      
+      this.makeTransaction(tx, wallet)
   }
 
   async makeTransaction(tx: Transaction, wallet: Wallet){
