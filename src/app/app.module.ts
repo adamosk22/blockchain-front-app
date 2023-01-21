@@ -40,7 +40,7 @@ import { FormsModule } from '@angular/forms';
     MatToolbarModule,
     MatIconModule,
     SolWalletsModule,
-    FormsModule
+    FormsModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -31,6 +31,7 @@
     "angular-sol-wallets": "^0.0.22",
     "assert": "^2.0.0",
     "bn.js": "^5.2.1",
+    "buffer": "^6.0.3",
     "css-loader": "^6.7.3",
     "process": "^0.11.10",
     "rxjs": "~7.5.0",

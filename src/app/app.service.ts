@@ -23,5 +23,6 @@ export class AppService {
   getHistory(ids: string): Observable<Result>{
     return this.http.get<Result>(this.baseUrl + 'v4/matches?ids=' + ids, { 'headers': headers })
   }
+  
 
 }

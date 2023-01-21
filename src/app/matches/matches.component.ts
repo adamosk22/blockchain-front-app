@@ -5,7 +5,6 @@ import { AppService } from '../app.service';
 import { SolWalletsService, Wallet } from "angular-sol-wallets" ;
 import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider } from "@project-serum/anchor";
-import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
 
@@ -36,12 +35,18 @@ export class MatchesComponent implements OnInit {
   available: boolean = false;
   bets: string[] = ['HOME_TEAM', 'AWAY_TEAM', 'DRAW']
   myDates: number[] = []
-  wallet = this.solWalletS.connect();
-  network = "http://localhost:8899";
+  network = "https://api.devnet.solana.com";
   connection = new Connection(this.network, "processed");
+  address = "Fnegbc6LmnZGufbRXbgpEZbVDQJe2aSUYhsbjjU611Hh"
   
 
   ngOnInit(){
+    this.solWalletS.connect().then( async wallet => {
+      /*const program = this.getProgram(wallet)
+      const contract = anchor.web3.Keypair.generate();
+      if(program){
+    const state = await program.account.programContract.fetch(this.address);
+    console.log(state)*/
     const result: Observable<Result> = this.service.getMatches();
     result.subscribe(
       val => {
@@ -64,6 +69,10 @@ export class MatchesComponent implements OnInit {
         //const user = _anchor.web3.Keypair.generate();
       }
     )
+    }
+  //}
+    )
+    
   }
 
   chooseOption(value: any, element: any) {    
@@ -75,7 +84,7 @@ export class MatchesComponent implements OnInit {
       {
     this.solWalletS.connect().then( wallet => {
     const program = this.getProgram(wallet)
-    const amount = new anchor.BN(1 * anchor.web3.LAMPORTS_PER_SOL);
+    const amount = new anchor.BN(element.amount * anchor.web3.LAMPORTS_PER_SOL);
     if(program){
       const contract = anchor.web3.Keypair.generate();
       var user;
@@ -87,7 +96,8 @@ export class MatchesComponent implements OnInit {
       
       //after connecting to backend it should be set for already bet elements
       element.blocked = true;
-      this.placeWager(program, contract, user, element.id, amount, element.bet, wallet)
+      if(user)
+        this.placeWager(program, contract, user, element.id, amount, element.bet, wallet)
 
       
     
@@ -99,7 +109,7 @@ export class MatchesComponent implements OnInit {
 }
 
   getProvider(wallet: Wallet) {
-    if (!this.wallet) {
+    if (!wallet) {
       return null;
     }
 
@@ -121,7 +131,7 @@ export class MatchesComponent implements OnInit {
 
     const program: Program<BettingApp> = new Program(
       IDL,
-      "4BXdw9SoHpzaZCMR5tvEhjm7qQiCsjUAfmjJTHmTmEVC",
+      this.address,
       provider
     );
 
@@ -132,9 +142,9 @@ export class MatchesComponent implements OnInit {
     program: Program<BettingApp>,
     contract: any,
     user: PublicKey,
-    gameId: any,
-    amount: any,
-    prediction: any,
+    gameId: number,
+    amount: anchor.BN,
+    prediction: string,
     wallet: Wallet
   ) {
     const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
@@ -151,15 +161,7 @@ export class MatchesComponent implements OnInit {
       program.programId
     );
 
-   /* await program.methods
-      .placeWager(gameId, amount, prediction)
-      .accounts({
-        user: user,
-        contract: contract.publicKey,
-        programWallet: programPDA,
-        userStats: userStatsPDA,
-      })
-      .transaction();*/
+   
       const tx = program.methods.placeWager(gameId, amount, prediction)
       .accounts({
         user: user,
@@ -181,11 +183,13 @@ export class MatchesComponent implements OnInit {
   }
 
   async makeTransaction(tx: Transaction, wallet: Wallet){
-    tx.feePayer = wallet.publicKey
-        tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash
-        const signedTx = await wallet.signTransaction(tx)
-        const txId = await this.connection.sendRawTransaction(signedTx.serialize())
-        await this.connection.confirmTransaction(txId)
+    if(wallet.publicKey){
+      tx.feePayer = wallet.publicKey
+          tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash
+          const signedTx = await wallet.signTransaction(tx)
+          const txId = await this.connection.sendRawTransaction(signedTx.serialize())
+          await this.connection.confirmTransaction(txId)
+    }
   }
 
   

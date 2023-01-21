@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { SolWalletsService } from 'angular-sol-wallets';
+import { SolWalletsService, Wallet } from 'angular-sol-wallets';
 import { Observable } from 'rxjs';
 import { Match, Result } from '../app.interfaces';
 import { AppService } from '../app.service';
+import * as anchor from "@project-serum/anchor";
+import { Program, AnchorProvider } from "@project-serum/anchor";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { BettingApp, IDL } from '../betting_app';
 
 interface TableElement{
   id: number;
@@ -15,6 +19,7 @@ interface TableElement{
   homeCrest: string;
   awayCrest: string;
   collected: boolean;
+  blocked: false;
 }
 interface BasicElement{
   id: number;
@@ -38,8 +43,22 @@ export class HistoryComponent implements OnInit {
   matchesToDisplay: Match[] = [];
   table: TableElement[] = [];
   available: boolean = false;
+  network = "https://api.devnet.solana.com";
+  connection = new Connection(this.network, "processed");
+  address = "Fnegbc6LmnZGufbRXbgpEZbVDQJe2aSUYhsbjjU611Hh"
 
   ngOnInit(): void {
+    this.solWalletS.connect().then( async wallet => {
+      const program = this.getProgram(wallet)
+      if(program){
+        const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
+          [
+            anchor.utils.bytes.utf8.encode("user-stats"),
+          ],
+          program.programId
+        );
+        let stats =  await program.account.userStats.fetch(userStatsPDA);
+    console.log(stats)
     let ids = this.backendInfo.map(x=>x.id).join(',')
     console.log(ids)
     const result: Observable<Result> = this.service.getHistory(ids);
@@ -54,7 +73,7 @@ export class HistoryComponent implements OnInit {
             this.backendInfo.forEach(e => {
               if(e.id == match.id){
                 basicElement = e;
-                this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:basicElement.bet, amount: basicElement.amount, result: match.score.winner, collected: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest})
+                this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:basicElement.bet, amount: basicElement.amount, result: match.score.winner, collected: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest, blocked: false})
               }
             })
           }
@@ -63,8 +82,8 @@ export class HistoryComponent implements OnInit {
         this.available = true;
       }
     )
+      }})
   }
-
   collect(element: TableElement) {
     console.log(element);
     this.solWalletS.connect().then( wallet => {
@@ -74,6 +93,38 @@ export class HistoryComponent implements OnInit {
     })
     element.collected = true;
   }
+
+  getProvider(wallet: Wallet) {
+    if (!wallet) {
+      return null;
+    }
+
+    
+
+    const provider = new AnchorProvider(this.connection, wallet, {
+      preflightCommitment: "processed",
+    });
+
+    return provider;
+  }
+
+  getProgram(wallet: Wallet) {
+    const provider = this.getProvider(wallet);
+
+    if (!provider) {
+      return;
+    }
+
+    const program: Program<BettingApp> = new Program(
+      IDL,
+      this.address,
+      provider
+    );
+
+    return program;
+  }
+
+  
 
 
   
