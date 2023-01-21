@@ -6,7 +6,7 @@ import { SolWalletsService, Wallet } from "angular-sol-wallets" ;
 import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider } from "@project-serum/anchor";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
 
 interface TableElement{
@@ -37,6 +37,8 @@ export class MatchesComponent implements OnInit {
   bets: string[] = ['HOME_TEAM', 'AWAY_TEAM', 'DRAW']
   myDates: number[] = []
   wallet = this.solWalletS.connect();
+  network = "http://localhost:8899";
+  connection = new Connection(this.network, "processed");
   
 
   ngOnInit(){
@@ -85,7 +87,7 @@ export class MatchesComponent implements OnInit {
       
       //after connecting to backend it should be set for already bet elements
       element.blocked = true;
-      this.placeWager(program, contract, user, element.id, amount, element.bet)
+      this.placeWager(program, contract, user, element.id, amount, element.bet, wallet)
 
       
     
@@ -101,10 +103,9 @@ export class MatchesComponent implements OnInit {
       return null;
     }
 
-    const network = "http://localhost:8899";
-    const connection = new Connection(network, "processed");
+    
 
-    const provider = new AnchorProvider(connection, wallet, {
+    const provider = new AnchorProvider(this.connection, wallet, {
       preflightCommitment: "processed",
     });
 
@@ -130,10 +131,11 @@ export class MatchesComponent implements OnInit {
     async placeWager(
     program: Program<BettingApp>,
     contract: any,
-    user: any,
+    user: PublicKey,
     gameId: any,
     amount: any,
     prediction: any,
+    wallet: Wallet
   ) {
     const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
       [
@@ -148,8 +150,8 @@ export class MatchesComponent implements OnInit {
       ],
       program.programId
     );
-  
-    await program.methods
+
+   /* await program.methods
       .placeWager(gameId, amount, prediction)
       .accounts({
         user: user,
@@ -157,9 +159,38 @@ export class MatchesComponent implements OnInit {
         programWallet: programPDA,
         userStats: userStatsPDA,
       })
-      .signers([contract])
-      .rpc();
+      .transaction();*/
+      const tx = program.methods.placeWager(gameId, amount, prediction)
+      .accounts({
+        user: user,
+        contract: contract.publicKey,
+        programWallet: programPDA,
+        userStats: userStatsPDA,
+      })
+      .transaction()
+      tx.then(value => {
+        this.makeTransaction(value, wallet)
+      })
+      
+
+
+      
+      
+
+      
   }
+
+  async makeTransaction(tx: Transaction, wallet: Wallet){
+    tx.feePayer = wallet.publicKey
+        tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash
+        const signedTx = await wallet.signTransaction(tx)
+        const txId = await this.connection.sendRawTransaction(signedTx.serialize())
+        await this.connection.confirmTransaction(txId)
+  }
+
+  
+
+  
 
 
 }
