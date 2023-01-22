@@ -158,7 +158,9 @@ export class MatchesComponent implements OnInit {
       ],
       program.programId
     );
-    //this.createUserStats(program, user, wallet)
+    const newUserInfo = await program.provider.connection.getAccountInfo(user);
+    if(newUserInfo)
+      this.createUserStats(program, user, wallet)
       const tx = await program.methods.placeWager(gameId, amount, prediction)
       .accounts({
         user: user,

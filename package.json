@@ -34,10 +34,13 @@
     "buffer": "^6.0.3",
     "css-loader": "^6.7.3",
     "http-proxy-middleware": "^2.0.6",
+    "path-browserify": "^1.0.1",
     "process": "^0.11.10",
     "rxjs": "~7.5.0",
+    "stream-browserify": "^3.0.0",
     "style-loader": "^3.3.1",
     "tslib": "^2.3.0",
+    "url": "^0.11.0",
     "wallet-adapter": "^1.0.0",
     "zone.js": "~0.11.4"
   },
