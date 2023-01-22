@@ -503,51 +503,56 @@ export type BettingApp = {
     },
     {
       "code": 6002,
+      "name": "InvalidGameState",
+      "msg": "Game with given sate cannot be set to given result"
+    },
+    {
+      "code": 6003,
       "name": "GameAlreadyStarted",
       "msg": "Game with given Id has already started, cannot place a bet"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "GameAlreadyExists",
       "msg": "Game with given Id already exists in the pool of active games"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "GameNotFinished",
       "msg": "Game with given Id has is neither finished or cancelled"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "MaxWagersPerGameReached",
       "msg": "Maximum amount of wagers for this game has been reached, cannot place a bet"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "MaxActiveGamesReached",
       "msg": "Maximum amount of active games has been reached, cannot open a bet for this game"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "MinimalWagerAmount",
       "msg": "A wager must be at least X lamparts"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "InstructionNotPermitted",
       "msg": "No permission to call this instruction, only the owner is allowed"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "WagerAlreadyPlaced",
       "msg": "Cannot place a wager on a game, another one has already been placed"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "WagerNotPlaced",
       "msg": "Cannot retract a wager, no wager was placed"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "NoAmountOwed",
       "msg": "No amount owed to perform a transfer"
     }
@@ -1059,51 +1064,56 @@ export const IDL: BettingApp = {
     },
     {
       "code": 6002,
+      "name": "InvalidGameState",
+      "msg": "Game with given sate cannot be set to given result"
+    },
+    {
+      "code": 6003,
       "name": "GameAlreadyStarted",
       "msg": "Game with given Id has already started, cannot place a bet"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "GameAlreadyExists",
       "msg": "Game with given Id already exists in the pool of active games"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "GameNotFinished",
       "msg": "Game with given Id has is neither finished or cancelled"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "MaxWagersPerGameReached",
       "msg": "Maximum amount of wagers for this game has been reached, cannot place a bet"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "MaxActiveGamesReached",
       "msg": "Maximum amount of active games has been reached, cannot open a bet for this game"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "MinimalWagerAmount",
       "msg": "A wager must be at least X lamparts"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "InstructionNotPermitted",
       "msg": "No permission to call this instruction, only the owner is allowed"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "WagerAlreadyPlaced",
       "msg": "Cannot place a wager on a game, another one has already been placed"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "WagerNotPlaced",
       "msg": "Cannot retract a wager, no wager was placed"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "NoAmountOwed",
       "msg": "No amount owed to perform a transfer"
     }

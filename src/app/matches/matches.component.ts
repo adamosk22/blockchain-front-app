@@ -5,7 +5,7 @@ import { AppService } from '../app.service';
 import { SolWalletsService, Wallet } from "angular-sol-wallets" ;
 import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider } from "@project-serum/anchor";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
 import * as buffer from 'buffer';
 import { WalletAdapter } from '../WalletAdapter';
@@ -21,6 +21,7 @@ interface TableElement{
   homeCrest: string;
   awayCrest: string;
   blocked: boolean;
+  betAmount: number;
 }
 
 @Component({
@@ -60,11 +61,10 @@ export class MatchesComponent implements OnInit {
         this.matchesToDisplay = this.matches.slice(0, 10)
         this.matchesToDisplay.forEach(
           match => {
-            this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:"", amount: 0, blocked: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest})
+            this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:"", amount: 0, blocked: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest, betAmount:0})
           }
         )
         console.log(this.table);
-        this.available = true;
       }
     )
     }
@@ -81,10 +81,10 @@ export class MatchesComponent implements OnInit {
     if(element.bet != '' && element.amount > 0)
       {
     this.solWalletS.connect().then( wallet => {
+      console.log(wallet)
     const program = this.getProgram(wallet)
     const amount = new anchor.BN(element.amount * anchor.web3.LAMPORTS_PER_SOL);
     if(program){
-      const contract = anchor.web3.Keypair.generate();
       var user;
     
         console.log(element);
@@ -95,7 +95,7 @@ export class MatchesComponent implements OnInit {
       //after connecting to backend it should be set for already bet elements
       element.blocked = true;
       if(user)
-        this.placeWager(program, contract, user, element.id, amount, element.bet, wallet)
+        this.placeWager(program, user, element.id, amount, element.bet, wallet)
 
       
     
@@ -138,7 +138,6 @@ export class MatchesComponent implements OnInit {
 
   async placeWager(
     program: Program<BettingApp>,
-    contract: any,
     user: PublicKey,
     gameId: number,
     amount: anchor.BN,
@@ -203,6 +202,103 @@ export class MatchesComponent implements OnInit {
       .transaction()
       this.makeTransaction(tx, wallet)
   }
+
+  configure(){
+    this.solWalletS.connect().then( async wallet => {
+      const program = this.getProgram(wallet)
+      if(program){
+        const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
+          [
+            anchor.utils.bytes.utf8.encode("user-stats"),
+            wallet.publicKey.toBuffer()
+          ],
+          program.programId
+        );
+        let stats =  await program.account.userStats.fetch(userStatsPDA);
+    console.log(stats)
+    stats.history.forEach(val => {
+      this.table.forEach(element => {
+        if(val.gameId == element.id){
+            var bet
+            if(val.predictedResult.awayVictory)
+              bet = 'AwayVictory'
+            else if (val.predictedResult.homeVictory)
+              bet = 'HomeVictory'
+            else if (val.predictedResult.tie)
+              bet = 'Tie'
+            else
+              bet = '?'
+          element.bet = bet
+          element.betAmount = val.lamportsBet.toNumber() / LAMPORTS_PER_SOL
+          element.blocked = true;
+        }
+      })
+    })
+    
+    
+      }})
+      this.available = true;
+  }
+
+  async withdrawWager(
+    program: Program<BettingApp>,
+    user: PublicKey,
+    gameId: number,
+    wallet: Wallet
+  ) {
+    const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("user-stats"),
+        user.toBuffer(),
+      ],
+      program.programId
+    );
+    const [programPDA, _pb] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("program-wallet"),
+        this.address.toBuffer(),
+      ],
+      program.programId
+    );
+  
+    const tx = await program.methods
+      .withdrawWager(gameId)
+      .accounts({
+        user: user,
+        contract: this.address,
+        programWallet: programPDA,
+        userStats: userStatsPDA,
+      })
+      .transaction()
+      this.makeTransaction(tx, wallet)
+  }
+
+  withdrawBet(element: TableElement) {
+    this.solWalletS.connect().then( wallet => {
+      console.log(wallet)
+    const program = this.getProgram(wallet)
+    if(program){
+      var user;
+    
+        console.log(element);
+      
+        console.log("Wallet connected successfully with this address:", wallet.publicKey?.[Symbol.toStringTag]);
+        user = wallet.publicKey;
+      
+      //after connecting to backend it should be set for already bet elements
+      element.blocked = true;
+      if(user)
+        this.withdrawWager(program, user, element.id, wallet)
+
+      
+    
+  }
+  }).catch(err => {
+    console.log("Error connecting wallet", err );
+  })
+}
+
+  
 
   
 

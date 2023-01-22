@@ -41,6 +41,7 @@
     <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
 </table>
 <div *ngIf="matches.length==0">
-    <p>Loading...</p>
+    <button mat-stroked-button (click)="configure()">Connect to wallet</button>
+    <br>
     If nothing shows up after a few seconds please click <a href="https://cors-anywhere.herokuapp.com/corsdemo">here</a> and refresh this page after following instructions.
 </div>

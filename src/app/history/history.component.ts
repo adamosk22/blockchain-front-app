@@ -5,9 +5,11 @@ import { Match, Result } from '../app.interfaces';
 import { AppService } from '../app.service';
 import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider } from "@project-serum/anchor";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/web3.js";
 import { BettingApp, IDL } from '../betting_app';
 import { WalletAdapter } from '../WalletAdapter';
+import * as buffer from 'buffer';
+window.Buffer = buffer.Buffer;
 
 interface TableElement{
   id: number;
@@ -46,21 +48,27 @@ export class HistoryComponent implements OnInit {
   available: boolean = false;
   network = "https://api.devnet.solana.com";
   connection = new Connection(this.network, "processed");
-  address = "Fnegbc6LmnZGufbRXbgpEZbVDQJe2aSUYhsbjjU611Hh"
+  address = new PublicKey("Fnegbc6LmnZGufbRXbgpEZbVDQJe2aSUYhsbjjU611Hh")
+  program: Program<BettingApp> | undefined
 
   ngOnInit(): void {
+    
+  }
+
+  configure(){
     this.solWalletS.connect().then( async wallet => {
       const program = this.getProgram(wallet)
       if(program){
         const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("user-stats"),
+            wallet.publicKey.toBuffer()
           ],
           program.programId
         );
         let stats =  await program.account.userStats.fetch(userStatsPDA);
     console.log(stats)
-    let ids = this.backendInfo.map(x=>x.id).join(',')
+    let ids = stats.history.map(x=>x.gameId).join(',')
     console.log(ids)
     const result: Observable<Result> = this.service.getHistory(ids);
     result.subscribe(
@@ -71,10 +79,29 @@ export class HistoryComponent implements OnInit {
         this.matchesToDisplay.forEach(
           match => {
             var basicElement: BasicElement
-            this.backendInfo.forEach(e => {
-              if(e.id == match.id){
-                basicElement = e;
-                this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet:basicElement.bet, amount: basicElement.amount, result: match.score.winner, collected: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest, blocked: false})
+            stats.history.forEach(e => {
+              if(e.gameId == match.id){
+                var bet
+                if(e.predictedResult.awayVictory)
+                  bet = 'AwayVictory'
+                else if (e.predictedResult.homeVictory)
+                  bet = 'HomeVictory'
+                else if (e.predictedResult.tie)
+                  bet = 'Tie'
+                else
+                  bet = '?'
+                  var result
+                if(e.actuallResult?.awayVictory)
+                  result = 'AwayVictory'
+                else if (e.actuallResult?.homeVictory)
+                  result = 'HomeVictory'
+                else if (e.actuallResult?.tie)
+                  result = 'Tie'
+                else
+                  result = '?'
+                  var amount = e.lamportsBet.toNumber() / LAMPORTS_PER_SOL
+
+                this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet, amount, result, collected: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest, blocked: false})
               }
             })
           }
@@ -118,11 +145,25 @@ export class HistoryComponent implements OnInit {
 
     const program: Program<BettingApp> = new Program(
       IDL,
-      this.address,
+      "Cs6SipyJ7i4Qgw1QaaR2Jmtrbx9c4A7sHa4Kgx9edLHC",
       provider
     );
 
     return program;
+  }
+
+  async getStats(wallet: Wallet){
+    if(this.program){
+    const [userStatsPDA, _] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("user-stats"),
+        wallet.publicKey.toBuffer(),
+      ],
+      this.program.programId
+    );
+    return await this.program.account.userStats.fetch(userStatsPDA);
+    }
+    return null
   }
 
   
