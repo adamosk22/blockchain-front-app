@@ -1,7 +1,7 @@
 <table mat-table [dataSource]="this.table" *ngIf="this.available">
     <ng-container matColumnDef="date">
         <th mat-header-cell *matHeaderCellDef> Date </th>
-        <td mat-cell *matCellDef="let element"> {{element.utcDate}} </td>
+        <td mat-cell *matCellDef="let element" id="{{element.id}}"> {{element.utcDate}} </td>
     </ng-container>
     <ng-container matColumnDef="homeTeam">
         <th mat-header-cell *matHeaderCellDef> Home team </th>
@@ -49,7 +49,7 @@
                 <button mat-stroked-button (click)="withdrawBet(element)">Withdraw</button>
              </div>
         </td>
-    </ng-container> 
+    </ng-container>
     <tr mat-header-row *matHeaderRowDef="this.columnsToDisplay"></tr>
     <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
 </table>
