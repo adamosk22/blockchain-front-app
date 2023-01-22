@@ -50,7 +50,7 @@ export class MatchesComponent implements OnInit {
       if(program){
     const state = await program.account.programContract.fetch(this.address);
     console.log(state)
-    const ids = state.activeGames.map(x => x.id).join(',')
+    const ids = state.activeGames.filter(x => x.state.scheduled).map(x => x.id).join(',')
     const result: Observable<Result> = this.service.getHistory(ids);
     
 
@@ -206,7 +206,7 @@ export class MatchesComponent implements OnInit {
   configure(){
     this.solWalletS.connect().then( async wallet => {
       const program = this.getProgram(wallet)
-      if(program){
+      if(program && wallet.publicKey){
         const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("user-stats"),

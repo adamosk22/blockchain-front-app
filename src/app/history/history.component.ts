@@ -9,6 +9,7 @@ import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction } from "@solana/we
 import { BettingApp, IDL } from '../betting_app';
 import { WalletAdapter } from '../WalletAdapter';
 import * as buffer from 'buffer';
+import { HIGH_CONTRAST_MODE_ACTIVE_CSS_CLASS } from '@angular/cdk/a11y/high-contrast-mode/high-contrast-mode-detector';
 window.Buffer = buffer.Buffer;
 
 interface TableElement{
@@ -22,12 +23,8 @@ interface TableElement{
   homeCrest: string;
   awayCrest: string;
   collected: boolean;
-  blocked: false;
-}
-interface BasicElement{
-  id: number;
-  bet: string;
-  amount: number;
+  blocked: boolean;
+  cancelled: boolean;
 }
 
 @Component({
@@ -40,8 +37,6 @@ export class HistoryComponent implements OnInit {
   constructor(private service: AppService, private solWalletS: SolWalletsService) { }
 
   columnsToDisplay = ['date', 'homeTeam', 'awayTeam', 'bet', 'amount', 'result', 'actions']
-  //placeholder
-  backendInfo: BasicElement[]  = [{id: 416384, amount: 2, bet: 'AWAY_TEAM'}, {id: 416383, amount: 1, bet: 'HOME_TEAM'}, {id: 416317, amount: 3, bet: 'HOME_TEAM'}]
   matches: Match[] = [];
   matchesToDisplay: Match[] = [];
   table: TableElement[] = [];
@@ -52,13 +47,12 @@ export class HistoryComponent implements OnInit {
   program: Program<BettingApp> | undefined
 
   ngOnInit(): void {
-    
   }
 
   configure(){
     this.solWalletS.connect().then( async wallet => {
       const program = this.getProgram(wallet)
-      if(program){
+      if(program && wallet.publicKey){
         const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
           [
             anchor.utils.bytes.utf8.encode("user-stats"),
@@ -67,7 +61,9 @@ export class HistoryComponent implements OnInit {
           program.programId
         );
         let stats =  await program.account.userStats.fetch(userStatsPDA);
+        const state = await program.account.programContract.fetch(this.address);
     console.log(stats)
+    console.log(state)
     let ids = stats.history.map(x=>x.gameId).join(',')
     console.log(ids)
     const result: Observable<Result> = this.service.getHistory(ids);
@@ -78,7 +74,6 @@ export class HistoryComponent implements OnInit {
         this.matchesToDisplay = this.matches.slice(0, 10)
         this.matchesToDisplay.forEach(
           match => {
-            var basicElement: BasicElement
             stats.history.forEach(e => {
               if(e.gameId == match.id){
                 var bet
@@ -90,18 +85,29 @@ export class HistoryComponent implements OnInit {
                   bet = 'Tie'
                 else
                   bet = '?'
-                  var result
-                if(e.actuallResult?.awayVictory)
-                  result = 'AwayVictory'
-                else if (e.actuallResult?.homeVictory)
-                  result = 'HomeVictory'
-                else if (e.actuallResult?.tie)
-                  result = 'Tie'
-                else
-                  result = '?'
-                  var amount = e.lamportsBet.toNumber() / LAMPORTS_PER_SOL
+                  var result = '?'
+                
+                var amount = e.lamportsBet.toNumber() / LAMPORTS_PER_SOL
+                var cancelled = false
+                state.activeGames.forEach(g => {
+                  if(g.id == e.gameId && (g.state.finished || g.state.cancelled)){
+                    if(g.result?.awayVictory)
+                      result = 'AwayVictory'
+                    else if (g.result?.homeVictory)
+                      result = 'HomeVictory'
+                    else if (g.result?.tie)
+                      result = 'Tie'
+                    else
+                      result = '?'
 
-                this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet, amount, result, collected: false, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest, blocked: false})
+                    if(g.state.cancelled){
+                      cancelled = true
+                    }
+                  }
+                })
+                var collected = (e.lamportsWon.toNumber() > 0)
+
+                this.table.push({id: match.id, utcDate: match.utcDate, homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name, bet, amount, result, collected, homeCrest: match.homeTeam.crest, awayCrest: match.awayTeam.crest, blocked: false, cancelled})
               }
             })
           }
@@ -112,14 +118,32 @@ export class HistoryComponent implements OnInit {
     )
       }})
   }
+  
   collect(element: TableElement) {
-    console.log(element);
     this.solWalletS.connect().then( wallet => {
-      console.log("Wallet connected successfully with this address:", wallet.publicKey?.[Symbol.toStringTag]);
-    }).catch(err => {
-      console.log("Error connecting wallet", err );
-    })
-    element.collected = true;
+      console.log(wallet)
+    const program = this.getProgram(wallet)
+    const amount = new anchor.BN(element.amount * anchor.web3.LAMPORTS_PER_SOL);
+    if(program){
+      var user;
+    
+        console.log(element);
+      
+        console.log("Wallet connected successfully with this address:", wallet.publicKey?.[Symbol.toStringTag]);
+        user = wallet.publicKey;
+      
+      //after connecting to backend it should be set for already bet elements
+      element.blocked = true;
+      if(user)
+        this.collectWager(program, user, element.id, wallet)
+      element.collected = true;
+
+      
+    
+  }
+  }).catch(err => {
+    console.log("Error connecting wallet", err );
+  })
   }
 
   getProvider(wallet: Wallet) {
@@ -153,7 +177,7 @@ export class HistoryComponent implements OnInit {
   }
 
   async getStats(wallet: Wallet){
-    if(this.program){
+    if(this.program && wallet.publicKey){
     const [userStatsPDA, _] = PublicKey.findProgramAddressSync(
       [
         anchor.utils.bytes.utf8.encode("user-stats"),
@@ -164,6 +188,50 @@ export class HistoryComponent implements OnInit {
     return await this.program.account.userStats.fetch(userStatsPDA);
     }
     return null
+  }
+
+  async collectWager(
+    program: Program<BettingApp>,
+    user: PublicKey,
+    gameId: number,
+    wallet: Wallet
+  ) {
+    const [userStatsPDA, _ub] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("user-stats"),
+        user.toBuffer(),
+      ],
+      program.programId
+    );
+    const [programPDA, _pb] = PublicKey.findProgramAddressSync(
+      [
+        anchor.utils.bytes.utf8.encode("program-wallet"),
+        this.address.toBuffer(),
+      ],
+      program.programId
+    );
+  
+    const tx = await program.methods
+      .collectWager(gameId)
+      .accounts({
+        user: user,
+        contract: this.address,
+        userStats: userStatsPDA,
+        programWallet: programPDA,
+      })
+      .transaction()
+      this.makeTransaction(tx, wallet)
+
+  }
+
+  async makeTransaction(tx: Transaction, wallet: Wallet){
+    if(wallet.publicKey){
+      tx.feePayer = wallet.publicKey
+          tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash
+          const signedTx = await wallet.signTransaction(tx)
+          const txId = await this.connection.sendRawTransaction(signedTx.serialize())
+          await this.connection.confirmTransaction(txId)
+    }
   }
 
   
