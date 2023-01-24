@@ -17,7 +17,6 @@ import { MatchesComponent } from './matches/matches.component'
 import { SolWalletsModule } from 'angular-sol-wallets';
 import { HistoryComponent } from './history/history.component';
 import { FormsModule } from '@angular/forms';
-import { OwnerComponent  } from './owner/owner.component';
 
 
 @NgModule({
@@ -25,7 +24,6 @@ import { OwnerComponent  } from './owner/owner.component';
     AppComponent,
     MatchesComponent,
     HistoryComponent,
-    OwnerComponent,
   ],
   imports: [
     BrowserModule,
